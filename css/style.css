@@ -59,7 +59,6 @@
     box-shadow: 0 2px 6px rgba(0,0,0,0.15);
   }
 
-  /* Sembunyikan scrollbar tab di mobile tapi tetap bisa scroll */
   .tab-container::-webkit-scrollbar {
     height: 3px;
   }
@@ -137,7 +136,6 @@
     border-bottom: 2px solid #f0f4f8;
   }
 
-  /* Sub-card (kotak dalam card) */
   .card-sub {
     background: #f8f9fa;
     border-radius: 10px;
@@ -199,7 +197,6 @@
     margin-top: 5px;
   }
 
-  /* Grid layout form */
   .form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -241,40 +238,22 @@
     transform: scale(0.97);
   }
 
-  .btn-primary {
-    background: #2d6a9f;
-    color: white;
-  }
+  .btn-primary { background: #2d6a9f; color: white; }
   .btn-primary:hover { background: #1e3a5f; }
 
-  .btn-success {
-    background: #27ae60;
-    color: white;
-  }
+  .btn-success { background: #27ae60; color: white; }
   .btn-success:hover { background: #1e8449; }
 
-  .btn-danger {
-    background: #e74c3c;
-    color: white;
-  }
+  .btn-danger { background: #e74c3c; color: white; }
   .btn-danger:hover { background: #c0392b; }
 
-  .btn-warning {
-    background: #f0a500;
-    color: white;
-  }
+  .btn-warning { background: #f0a500; color: white; }
   .btn-warning:hover { background: #d4920a; }
 
-  .btn-info {
-    background: #17a2b8;
-    color: white;
-  }
+  .btn-info { background: #17a2b8; color: white; }
   .btn-info:hover { background: #138496; }
 
-  .btn-grey {
-    background: #e0e0e0;
-    color: #555;
-  }
+  .btn-grey { background: #e0e0e0; color: #555; }
   .btn-grey:hover { background: #c8c8c8; }
 
   .btn-sm {
@@ -282,7 +261,6 @@
     font-size: 0.8rem;
   }
 
-  /* Tombol tambah bahan (dashed border) */
   .btn-add {
     width: 100%;
     margin-top: 8px;
@@ -348,6 +326,67 @@
   .badge-red    { background: #f8d7da; color: #721c24; }
   .badge-blue   { background: #d1ecf1; color: #0c5460; }
   .badge-orange { background: #fff3cd; color: #856404; }
+
+  /* ======================================================
+     ✅ BARU — BADGE % HPP (indikator merah/hijau)
+  ====================================================== */
+  .hpp-pct-badge {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    background: #bdc3c7;
+    color: #fff;
+    min-width: 64px;
+    text-align: center;
+    transition: background 0.3s ease, transform 0.2s ease;
+    cursor: default;
+    letter-spacing: 0.3px;
+  }
+
+  /* Saat HPP aman (≤ 35%) */
+  .hpp-pct-badge.safe {
+    background: #27ae60;
+    box-shadow: 0 2px 8px rgba(39, 174, 96, 0.35);
+  }
+
+  /* Saat HPP terlalu tinggi (> 35%) */
+  .hpp-pct-badge.danger {
+    background: #e74c3c;
+    box-shadow: 0 2px 8px rgba(231, 76, 60, 0.35);
+    animation: pulse-danger 1.2s ease infinite;
+  }
+
+  /* Animasi pulse untuk kondisi bahaya */
+  @keyframes pulse-danger {
+    0%   { box-shadow: 0 2px 8px rgba(231, 76, 60, 0.35); }
+    50%  { box-shadow: 0 2px 16px rgba(231, 76, 60, 0.65); }
+    100% { box-shadow: 0 2px 8px rgba(231, 76, 60, 0.35); }
+  }
+
+  /* ======================================================
+     ✅ BARU — HPP ROW untuk baris % HPP
+  ====================================================== */
+  .hpp-row-pct {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #ebebeb;
+    font-size: 0.9rem;
+  }
+
+  .hpp-row-pct span:first-child {
+    color: #555;
+  }
+
+  .hpp-row-pct small {
+    font-size: 0.75rem;
+    color: #aaa;
+    margin-left: 4px;
+    font-weight: 400;
+  }
 
   /* ======================================================
      STATS GRID (Tab 3)
@@ -703,7 +742,7 @@
   }
 
   /* ======================================================
-     STEP BADGE (angka bulat di judul step)
+     STEP BADGE
   ====================================================== */
   .step-badge {
     display: inline-flex;
@@ -804,7 +843,7 @@
   }
 
   /* ======================================================
-     SCROLLBAR GLOBAL (opsional, untuk browser Webkit)
+     SCROLLBAR GLOBAL
   ====================================================== */
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: #f0f0f0; }
