@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aplikasi HPP Produk</title>
     <link rel="stylesheet" href="css/style.css">
+    <!-- ✅ SheetJS hanya di-load SEKALI, di <head> -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   </head>
   <body>
@@ -22,13 +23,14 @@
 
   <!-- ======================================================
        TAB NAVIGATION
+       ✅ FIX: showTab → switchTab
   ====================================================== -->
   <div class="tab-container">
-    <button class="tab-btn active" onclick="showTab('tab-bahan', this)">🥦 Input Bahan Baku</button>
-    <button class="tab-btn" onclick="showTab('tab-hpp', this)">📝 Input HPP</button>
-    <button class="tab-btn" onclick="showTab('tab-data-hpp', this)">📊 Data HPP</button>
-    <button class="tab-btn" onclick="showTab('tab-list-bahan', this)">📦 List Bahan Baku</button>
-    <button class="tab-btn" onclick="showTab('tab-list-resep', this)">📋 List Resep Menu</button>
+    <button class="tab-btn active" onclick="switchTab('tab-bahan', this)">🥦 Input Bahan Baku</button>
+    <button class="tab-btn" onclick="switchTab('tab-hpp', this)">📝 Input HPP</button>
+    <button class="tab-btn" onclick="switchTab('tab-data-hpp', this)">📊 Data HPP</button>
+    <button class="tab-btn" onclick="switchTab('tab-list-bahan', this)">📦 List Bahan Baku</button>
+    <button class="tab-btn" onclick="switchTab('tab-list-resep', this)">📋 List Resep Menu</button>
   </div>
 
   <!-- ======================================================
@@ -72,7 +74,7 @@
           <div class="form-row-3">
             <div class="form-group">
               <label>Satuan Beli *</label>
-              <select id="bahan-satuan-beli">
+              <select id="bahan-satuan-beli" onchange="hitungHargaSatuan()">
                 <option value="">-- Pilih --</option>
                 <optgroup label="Berat">
                   <option>kg</option>
@@ -179,9 +181,9 @@
         <h2>📥 Import Bahan Baku dari Excel</h2>
         <div id="alert-import" class="alert"></div>
 
-        <!-- Step 1: Download Template -->
+        <!-- Step 1 -->
         <div class="card-sub">
-          <h3><span class="step-badge">1</span>Download Template Excel</h3>
+          <h3><span class="step-badge">1</span> Download Template Excel</h3>
           <p class="step-desc">
             Download template terlebih dahulu, isi data bahan baku sesuai format, lalu upload kembali.
           </p>
@@ -192,9 +194,9 @@
           </div>
         </div>
 
-        <!-- Step 2: Upload File -->
+        <!-- Step 2 -->
         <div class="card-sub">
-          <h3><span class="step-badge">2</span>Upload File Excel</h3>
+          <h3><span class="step-badge">2</span> Upload File Excel</h3>
           <div class="import-zone" id="import-zone"
             onclick="document.getElementById('file-excel').click()"
             ondragover="event.preventDefault(); this.classList.add('dragover')"
@@ -208,12 +210,10 @@
             style="display:none" onchange="handleFileUpload(event)">
         </div>
 
-        <!-- Step 3 & 4: Preview + Mode (muncul setelah file dipilih) -->
+        <!-- Step 3 & 4 -->
         <div id="import-preview-section" style="display:none">
-
-          <!-- Preview Tabel -->
           <div class="card-sub">
-            <h3><span class="step-badge">3</span>Preview Data</h3>
+            <h3><span class="step-badge">3</span> Preview Data</h3>
             <div id="import-summary"></div>
             <div class="preview-table table-wrap">
               <table>
@@ -236,9 +236,8 @@
             </div>
           </div>
 
-          <!-- Pilih Mode Import -->
           <div class="card-sub">
-            <h3><span class="step-badge">4</span>Pilih Mode Import</h3>
+            <h3><span class="step-badge">4</span> Pilih Mode Import</h3>
             <div class="import-option">
               <label>
                 <input type="radio" name="import-mode" value="modify" checked
@@ -260,7 +259,6 @@
               <button class="btn btn-grey" onclick="batalImport()">❌ Batal</button>
             </div>
           </div>
-
         </div>
       </div>
     </div>
@@ -297,7 +295,6 @@
           <button class="btn-add" onclick="tambahResepItem()">+ Tambah Bahan</button>
         </div>
 
-        <!-- Preview breakdown bahan -->
         <div id="hpp-preview" class="hpp-detail" style="display:none">
           <strong>💰 Rincian Bahan</strong>
           <div id="hpp-breakdown"></div>
@@ -316,7 +313,6 @@
           </div>
         </div>
 
-        <!-- Summary margin -->
         <div id="margin-info" class="hpp-detail" style="display:none">
           <div class="hpp-row"><span>Total HPP Bahan</span><span id="info-hpp-bahan">Rp 0</span></div>
           <div class="hpp-row"><span>Overhead</span><span id="info-overhead">Rp 0</span></div>
@@ -344,8 +340,9 @@
           <div class="stat-num" id="stat-avg-margin">0%</div>
           <div class="stat-label">Rata-rata Margin</div>
         </div>
+        <!-- ✅ FIX: stat-avg-hpp → stat-hpp (sesuai render.js) -->
         <div class="stat-card orange">
-          <div class="stat-num" id="stat-avg-hpp">Rp0</div>
+          <div class="stat-num" id="stat-hpp">Rp0</div>
           <div class="stat-label">Rata-rata HPP</div>
         </div>
       </div>
@@ -438,11 +435,8 @@
 
   <!-- ======================================================
        LOAD JAVASCRIPT (urutan penting!)
+       ✅ SheetJS TIDAK di-load lagi di sini (sudah ada di <head>)
   ====================================================== -->
-  <!-- CDN SheetJS untuk Import/Export Excel -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-
-  <!-- JS Lokal — URUTAN INI WAJIB BENAR! -->
   <script src="js/db.js"></script>
   <script src="js/bahan.js"></script>
   <script src="js/hpp.js"></script>
