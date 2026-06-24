@@ -4,14 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sistem HPP & Recipe Card F&B Pro</title>
-    <!-- Favicon Title Bar -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☕</text></svg>" />
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Supabase & SheetJS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <!-- External CSS -->
     <link rel="stylesheet" href="style.css" />
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans">
@@ -69,13 +65,14 @@
     <!-- MAIN CONTENT -->
     <div class="max-w-7xl mx-auto mt-4 p-4">
 
-        <!-- TAB 1: DIREKTORI RESEP (hanya toolbar search, tanpa judul) -->
+        <!-- TAB 1: DIREKTORI RESEP -->
         <div id="tab-direktori" class="tab-content active">
             <!-- Toolbar Search & Sort -->
             <div class="bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex flex-row items-center gap-2 mb-6">
                 <div class="relative flex-1">
                     <span class="absolute left-3 top-2 text-gray-400">🔍</span>
-                    <input type="text" id="search-resep" placeholder="Cari menu..." class="pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm w-full focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none transition-all" oninput="loadDirektori()" />
+                    <!-- PERBAIKAN: tambahkan autocomplete="off" dan type="search" -->
+                    <input type="search" id="search-resep" placeholder="Cari menu..." autocomplete="off" class="pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm w-full focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none transition-all" oninput="loadDirektori()" />
                 </div>
                 <select id="sort-resep" class="py-2 px-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-400 outline-none cursor-pointer flex-shrink-0" onchange="loadDirektori()">
                     <option value="nama">A - Z</option>
