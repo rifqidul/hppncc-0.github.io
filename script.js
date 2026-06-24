@@ -88,7 +88,12 @@ function renderAuthUI() {
         btnLogin.classList.remove('hidden'); btnLogout.classList.add('hidden'); btnLoginMobile.classList.remove('hidden'); btnLogoutMobile.classList.add('hidden');
         userStatus.innerHTML = "👤 Guest"; userStatus.classList.replace('text-blue-600', 'text-gray-500'); userStatus.classList.replace('bg-blue-50', 'bg-gray-100');
         userStatusMobile.innerHTML = "👤 Guest (View Only)"; userStatusMobile.classList.replace('text-blue-600', 'text-gray-500'); userStatusMobile.classList.replace('bg-blue-50', 'bg-gray-100');
-        if(document.getElementById('tab-input-hpp').classList.contains('active') || document.getElementById('tab-settings').classList.contains('active')) { switchTab('tab-direktori'); }
+        
+        // Pengecekan tab admin aktif, amankan tab Bahan Baku jika guest
+        const activeTabEl = document.querySelector('.tab-content.active');
+        if(activeTabEl && ['tab-bahan-baku', 'tab-input-hpp', 'tab-settings'].includes(activeTabEl.id)) { 
+            switchTab('tab-direktori'); 
+        }
     }
 }
 
@@ -249,8 +254,7 @@ async function loadDirektori() {
         (menu.resep_detail || []).forEach(det => {
             if (det.bahan_baku) {
                 totalCost += det.qty * det.bahan_baku.harga;
-                // Layout Komposisi Baru (Nama di kiri, Qty di Kanan. Tanpa Harga)
-                komposisiHTML += `<li class="flex justify-between items-center text-sm py-1.5 border-b border-gray-100 last:border-0"><span class="text-gray-600 font-medium truncate pr-4">- ${det.bahan_baku.nama}</span> <span class="font-bold text-gray-800 whitespace-nowrap">${det.qty} ${det.bahan_baku.satuan}</span></li>`;
+                komposisiHTML += `<li class="flex justify-between items-start text-[15px] py-1.5 border-b border-gray-100 last:border-0"><span class="text-gray-600 font-medium pr-4 break-words w-2/3 leading-snug">- ${det.bahan_baku.nama}</span> <span class="font-bold text-gray-800 whitespace-nowrap text-right w-1/3">${det.qty} ${det.bahan_baku.satuan}</span></li>`;
             }
         });
         return { ...menu, totalCost, margin: menu.harga_jual - totalCost, hppPersen: menu.harga_jual > 0 ? (totalCost / menu.harga_jual) * 100 : 0, komposisiHTML };
@@ -279,11 +283,12 @@ async function loadDirektori() {
             
             const cardBgColor = getCardGradient(sub); // Dynamic Card Color berdasarkan sub
             
-            html += `<div class="mb-10"><h3 class="text-lg font-bold text-gray-700 mb-5 flex items-center"><span class="bg-blue-50 text-blue-700 px-4 py-1.5 rounded-full text-sm uppercase tracking-wider border border-blue-200 shadow-sm">${sub}</span></h3><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">`;
+            // Grid diperbarui: maksimal 3 kolom di layar super besar (biar kartu lebih luas ke samping)
+            html += `<div class="mb-10"><h3 class="text-lg font-bold text-gray-700 mb-5 flex items-center"><span class="bg-blue-50 text-blue-700 px-4 py-1.5 rounded-full text-sm uppercase tracking-wider border border-blue-200 shadow-sm">${sub}</span></h3><div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">`;
             
             groupedData[kat][sub].forEach(menu => {
-                let hppColor = menu.hppPersen > hppLimitThreshold ? 'text-red-500' : 'text-emerald-500';
-                let marginColor = menu.margin < 0 ? 'text-red-500' : 'text-emerald-500';
+                let hppColor = menu.hppPersen > hppLimitThreshold ? 'text-red-500' : 'text-emerald-600';
+                let marginColor = menu.margin < 0 ? 'text-red-500' : 'text-emerald-600';
 
                 html += `
                     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-visible relative hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group flex flex-col">
@@ -294,10 +299,11 @@ async function loadDirektori() {
                                 <button onclick="aksiHapusResep(${menu.id}, '${menu.nama}')" class="w-full text-left px-4 py-2 hover:bg-red-50 font-bold text-red-600">🗑️ Hapus</button>
                             </div>
                         </div>
-                        <div class="bg-gradient-to-br ${cardBgColor} text-white p-5 rounded-t-2xl"><h3 class="text-xl font-black truncate tracking-wide pr-8">${menu.nama}</h3></div>
-                        <div class="p-5 flex-grow flex flex-col">
-                            <ul class="mb-5 h-28 overflow-y-auto custom-scrollbar flex-grow pr-2">${menu.komposisiHTML || '<li class="text-sm text-gray-400 italic">Tanpa komposisi</li>'}</ul>
-                            <div class="bg-gray-50 p-4 rounded-xl text-sm space-y-2 border border-gray-100 mt-auto">
+                        <div class="bg-gradient-to-br ${cardBgColor} text-white p-5 rounded-t-2xl"><h3 class="text-xl font-black tracking-wide pr-8 leading-tight break-words">${menu.nama}</h3></div>
+                        <div class="p-5 md:p-6 flex-grow flex flex-col">
+                            <!-- Scroll Area Diperpanjang (h-48 untuk mobile, md:h-56 untuk desktop) -->
+                            <ul class="mb-5 h-48 md:h-56 overflow-y-auto custom-scrollbar flex-grow pr-2">${menu.komposisiHTML || '<li class="text-sm text-gray-400 italic">Tanpa komposisi</li>'}</ul>
+                            <div class="bg-gray-50 p-4 rounded-xl text-[15px] space-y-2 border border-gray-100 mt-auto">
                                 <div class="flex justify-between items-center"><span class="text-gray-500 font-medium">Harga Jual:</span><span class="font-bold text-gray-800">${formatRp(menu.harga_jual)}</span></div>
                                 <div class="flex justify-between items-center"><span class="text-gray-500 font-medium">HPP Cost:</span><span class="font-bold text-gray-800">${formatRp(menu.totalCost)}</span></div>
                                 <div class="flex justify-between items-center border-t border-gray-200 pt-2"><span class="text-gray-500 font-medium">Margin:</span><span class="font-bold ${marginColor}">${formatRp(menu.margin)}</span></div>
