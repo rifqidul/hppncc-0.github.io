@@ -13,6 +13,10 @@
         .btn-tab.active { border-bottom: 2px solid #3b82f6; color: #3b82f6; }
         .modal-enter { animation: modalFadeIn 0.2s ease-out forwards; }
         @keyframes modalFadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        /* Style scrollbar dropdown */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
 <body class="bg-gray-100 font-sans">
@@ -163,13 +167,23 @@
                     </div>
                 </div>
 
-                <div class="bg-white p-6 rounded shadow">
+                <div class="bg-white p-6 rounded shadow overflow-visible">
                     <h3 class="font-semibold mb-4 text-lg border-b pb-2 text-blue-600">Komposisi Resep</h3>
-                    <div class="flex gap-2 mb-4">
-                        <select id="r-pilih-bb" class="w-full p-2 border rounded"></select>
-                        <input type="number" id="r-qty-bb" placeholder="Qty" class="w-1/4 p-2 border rounded">
+                    
+                    <!-- Fitur Baru: Autocomplete Searchable Input -->
+                    <div class="flex gap-2 mb-4 relative bb-autocomplete z-20">
+                        <div class="relative w-full flex-1">
+                            <input type="hidden" id="r-bb-selected-id">
+                            <input type="hidden" id="r-bb-selected-nama">
+                            <input type="hidden" id="r-bb-selected-harga">
+                            <input type="hidden" id="r-bb-selected-satuan">
+                            <input type="text" id="r-pilih-bb" placeholder="Ketik & cari nama bahan..." class="w-full p-2 border rounded text-sm focus:ring-2 focus:ring-blue-300 outline-none" onfocus="bukaDropdownBB('baru')" oninput="filterDropdownBB('baru')" autocomplete="off">
+                            <ul id="r-dropdown-list" class="absolute left-0 right-0 z-50 w-full bg-white border border-gray-300 rounded shadow-2xl max-h-48 overflow-y-auto hidden mt-1 custom-scrollbar"></ul>
+                        </div>
+                        <input type="number" id="r-qty-bb" placeholder="Qty" class="w-1/4 p-2 border rounded text-sm">
                         <button onclick="addTempKomposisi('baru')" class="bg-green-600 text-white px-4 rounded hover:bg-green-700 font-bold">+</button>
                     </div>
+
                     <table class="w-full text-left text-sm mb-4">
                         <thead><tr class="border-b text-gray-500"><th class="pb-1">Bahan</th><th class="pb-1">Qty</th><th class="pb-1">Subtotal</th><th class="pb-1 text-center">Aksi</th></tr></thead>
                         <tbody id="temp-komposisi-list"></tbody>
@@ -239,7 +253,7 @@
 
     <!-- MODAL POP-UP: EDIT RESEP & HPP -->
     <div id="modal-edit-resep" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-gray-100 rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6 relative modal-enter">
+        <div class="bg-gray-100 rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-visible p-6 relative modal-enter">
             <button onclick="closeModal('modal-edit-resep')" class="absolute top-4 right-4 text-gray-400 hover:text-red-500 font-bold text-xl z-10">✕</button>
             <h3 class="text-2xl font-bold mb-4 text-gray-800 border-b pb-2 border-gray-300">Edit Resep Menu</h3>
             <input type="hidden" id="edit-r-id">
@@ -262,13 +276,23 @@
                     </div>
                 </div>
 
-                <div class="bg-white p-5 rounded shadow-sm border">
+                <div class="bg-white p-5 rounded shadow-sm border overflow-visible">
                     <h4 class="font-semibold text-blue-600 mb-3 border-b pb-1">Komposisi</h4>
-                    <div class="flex gap-2 mb-3">
-                        <select id="edit-r-pilih-bb" class="w-full p-2 border rounded text-sm"></select>
+                    
+                    <!-- Fitur Baru: Autocomplete Searchable Input di Form Edit -->
+                    <div class="flex gap-2 mb-3 relative bb-autocomplete z-20">
+                        <div class="relative w-full flex-1">
+                            <input type="hidden" id="edit-r-bb-selected-id">
+                            <input type="hidden" id="edit-r-bb-selected-nama">
+                            <input type="hidden" id="edit-r-bb-selected-harga">
+                            <input type="hidden" id="edit-r-bb-selected-satuan">
+                            <input type="text" id="edit-r-pilih-bb" placeholder="Ketik & cari nama bahan..." class="w-full p-2 border rounded text-sm focus:ring-2 focus:ring-blue-300 outline-none" onfocus="bukaDropdownBB('edit')" oninput="filterDropdownBB('edit')" autocomplete="off">
+                            <ul id="edit-r-dropdown-list" class="absolute left-0 right-0 z-50 w-full bg-white border border-gray-300 rounded shadow-2xl max-h-48 overflow-y-auto hidden mt-1 custom-scrollbar"></ul>
+                        </div>
                         <input type="number" id="edit-r-qty-bb" placeholder="Qty" class="w-1/4 p-2 border rounded text-sm">
                         <button onclick="addTempKomposisi('edit')" class="bg-green-600 text-white px-3 rounded hover:bg-green-700 font-bold">+</button>
                     </div>
+
                     <div class="max-h-32 overflow-y-auto mb-3 border rounded">
                         <table class="w-full text-left text-sm">
                             <thead class="bg-gray-50 sticky top-0"><tr class="border-b text-gray-500"><th class="p-2">Bahan</th><th class="p-2">Qty</th><th class="p-2">Subtotal</th><th class="p-2 text-center">Aksi</th></tr></thead>
@@ -326,10 +350,23 @@
         }
 
         function closeModal(modalId) { document.getElementById(modalId).classList.add('hidden'); }
-        window.addEventListener('click', function(e) { if (!e.target.matches('.kebab-btn')) { document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.add('hidden')); } });
+        
+        // Deteksi klik di luar untuk kebab menu dan dropdown auto-select
+        window.addEventListener('click', function(e) { 
+            if (!e.target.matches('.kebab-btn')) { 
+                document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.add('hidden')); 
+            } 
+            if (!e.target.closest('.bb-autocomplete')) {
+                const d1 = document.getElementById('r-dropdown-list');
+                const d2 = document.getElementById('edit-r-dropdown-list');
+                if(d1) d1.classList.add('hidden');
+                if(d2) d2.classList.add('hidden');
+            }
+        });
+        
         function toggleKebabMenu(event, menuId) { event.stopPropagation(); const targetMenu = document.getElementById(menuId); const isHidden = targetMenu.classList.contains('hidden'); document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.add('hidden')); if (isHidden) targetMenu.classList.remove('hidden'); }
 
-        // ================= BAHAN BAKU =================
+        // ================= BAHAN BAKU (Tabel) =================
         function kalkulasiHargaSatuBB(mode) {
             const prefix = mode === 'edit' ? 'edit-bb-' : 'bb-';
             const hrgBeli = getNilaiAsli(document.getElementById(prefix+'harga-beli').value);
@@ -419,20 +456,89 @@
             if(error) alert("Gagal!"); else { closeModal('modal-edit-bb'); loadBahanBaku(); if(document.getElementById('tab-direktori').classList.contains('active')) loadDirektori(); }
         }
 
-        // ================= RESEP HPP =================
+        // ================= AUTOCOMPLETE SELECT BAHAN BAKU =================
         async function loadDropdownBahanBaku(targetElement) {
-            const { data } = await supabaseClient.from('bahan_baku').select('*').order('nama'); bahanBakuList = data || [];
-            const select = document.getElementById(targetElement === 'edit' ? 'edit-r-pilih-bb' : 'r-pilih-bb'); select.innerHTML = '<option value="">-- Pilih Bahan --</option>';
-            bahanBakuList.forEach(bb => select.innerHTML += `<option value="${bb.id}" data-harga="${bb.harga}" data-nama="${bb.nama}" data-satuan="${bb.satuan}">${bb.nama} (${formatRp(bb.harga)}/${bb.satuan})</option>`);
+            const { data } = await supabaseClient.from('bahan_baku').select('*').order('nama');
+            bahanBakuList = data || [];
+            
+            const prefix = targetElement === 'edit' ? 'edit-r-' : 'r-';
+            const ul = document.getElementById(prefix + 'dropdown-list');
+            ul.innerHTML = '';
+            
+            if(bahanBakuList.length === 0) {
+                ul.innerHTML = '<li class="p-3 text-gray-400 text-sm italic">Belum ada bahan baku di database</li>';
+            } else {
+                bahanBakuList.forEach(bb => {
+                    ul.innerHTML += `
+                        <li class="p-3 border-b cursor-pointer hover:bg-blue-50 text-sm bb-item flex justify-between items-center transition-colors" 
+                            onclick="pilihBahanBaku('${targetElement}', '${bb.id}', '${bb.nama.replace(/'/g, "\\'")}', ${bb.harga}, '${bb.satuan}')">
+                            <div class="font-semibold text-gray-800">${bb.nama}</div>
+                            <div class="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">${formatRp(bb.harga)} / ${bb.satuan}</div>
+                        </li>`;
+                });
+            }
         }
 
+        function bukaDropdownBB(mode) {
+            const prefix = mode === 'edit' ? 'edit-r-' : 'r-';
+            document.getElementById(prefix + 'dropdown-list').classList.remove('hidden');
+            filterDropdownBB(mode); // langsung filter jika ada isinya
+        }
+
+        function filterDropdownBB(mode) {
+            const prefix = mode === 'edit' ? 'edit-r-' : 'r-';
+            const inputVal = document.getElementById(prefix + 'pilih-bb').value.toLowerCase();
+            const ul = document.getElementById(prefix + 'dropdown-list');
+            const items = ul.getElementsByTagName('li');
+            
+            let hasVisible = false;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].classList.contains('bb-item')) {
+                    const txtValue = items[i].textContent || items[i].innerText;
+                    if (txtValue.toLowerCase().indexOf(inputVal) > -1) {
+                        items[i].style.display = "";
+                        hasVisible = true;
+                    } else {
+                        items[i].style.display = "none";
+                    }
+                }
+            }
+        }
+
+        function pilihBahanBaku(mode, id, nama, harga, satuan) {
+            const prefix = mode === 'edit' ? 'edit-r-' : 'r-';
+            document.getElementById(prefix + 'pilih-bb').value = nama; 
+            document.getElementById(prefix + 'bb-selected-id').value = id;
+            document.getElementById(prefix + 'bb-selected-nama').value = nama;
+            document.getElementById(prefix + 'bb-selected-harga').value = harga;
+            document.getElementById(prefix + 'bb-selected-satuan').value = satuan;
+            
+            document.getElementById(prefix + 'dropdown-list').classList.add('hidden');
+        }
+
+        // ================= RESEP & KOMPOSISI =================
         function addTempKomposisi(mode) {
-            const prefix = mode === 'edit' ? 'edit-r-' : 'r-'; const select = document.getElementById(prefix + 'pilih-bb'); const qty = parseFloat(document.getElementById(prefix + 'qty-bb').value);
-            if(!select.value || !qty) return alert("Pilih bahan dan Qty!");
-            const selOpt = select.options[select.selectedIndex]; const harga = parseFloat(selOpt.getAttribute('data-harga')); const dataArr = mode === 'edit' ? tempKomposisiEdit : tempKomposisiBaru;
-            if(dataArr.some(item => item.bahan_baku_id == select.value)) return alert("Bahan sudah ada!");
-            dataArr.push({ bahan_baku_id: select.value, nama: selOpt.getAttribute('data-nama'), satuan: selOpt.getAttribute('data-satuan'), qty: qty, subtotal: harga * qty });
-            document.getElementById(prefix + 'qty-bb').value = ''; renderKomposisi(mode);
+            const prefix = mode === 'edit' ? 'edit-r-' : 'r-';
+            
+            const id = document.getElementById(prefix + 'bb-selected-id').value;
+            const nama = document.getElementById(prefix + 'bb-selected-nama').value;
+            const harga = parseFloat(document.getElementById(prefix + 'bb-selected-harga').value);
+            const satuan = document.getElementById(prefix + 'bb-selected-satuan').value;
+            const qty = parseFloat(document.getElementById(prefix + 'qty-bb').value);
+            
+            if(!id || !qty) return alert("Pilih bahan baku dari daftar Autocomplete (klik namanya) dan masukkan Qty!");
+
+            const dataArr = mode === 'edit' ? tempKomposisiEdit : tempKomposisiBaru;
+            if(dataArr.some(item => item.bahan_baku_id == id)) return alert("Bahan ini sudah ada di daftar resep di bawah!");
+
+            dataArr.push({ bahan_baku_id: id, nama: nama, satuan: satuan, qty: qty, subtotal: harga * qty });
+            
+            // Reset input form
+            document.getElementById(prefix + 'pilih-bb').value = '';
+            document.getElementById(prefix + 'bb-selected-id').value = '';
+            document.getElementById(prefix + 'qty-bb').value = '';
+            
+            renderKomposisi(mode);
         }
 
         function removeTempKomposisi(mode, index) { if(mode === 'edit') tempKomposisiEdit.splice(index, 1); else tempKomposisiBaru.splice(index, 1); renderKomposisi(mode); }
@@ -510,14 +616,12 @@
 
             // RENDER HTML GROUPING
             Object.keys(groupedData).sort().forEach(kat => {
-                // Header Kategori Utama
                 let html = `
                     <div class="mb-10 w-full bg-white p-6 rounded-lg shadow-sm border border-gray-100">
                         <h2 class="text-2xl font-extrabold text-gray-800 mb-6 border-b-4 border-blue-500 inline-block pr-6 pb-2 tracking-wide">${kat}</h2>
                 `;
 
                 Object.keys(groupedData[kat]).sort().forEach(sub => {
-                    // Header Sub-Kategori
                     html += `
                         <div class="mb-8">
                             <h3 class="text-lg font-bold text-gray-700 mb-4 ml-1 flex items-center">
@@ -526,7 +630,6 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     `;
 
-                    // Kartu Resep
                     groupedData[kat][sub].forEach(menu => {
                         let hppColor = menu.hppPersen > 35 ? 'text-red-600' : 'text-green-600';
                         html += `
@@ -564,8 +667,15 @@
 
         async function bukaModalEditResep(menuObj) {
             await loadDropdownBahanBaku('edit');
+            
+            // Bersihkan field autocomplete bahan jika ada bekas ketikan
+            document.getElementById('edit-r-pilih-bb').value = ''; 
+            document.getElementById('edit-r-bb-selected-id').value = '';
+            document.getElementById('edit-r-qty-bb').value = '';
+
             document.getElementById('edit-r-id').value = menuObj.id; document.getElementById('edit-r-nama').value = menuObj.nama; document.getElementById('edit-r-kategori').value = menuObj.kategori; document.getElementById('edit-r-sub').value = menuObj.sub_kategori;
             document.getElementById('edit-r-harga-jual').value = menuObj.harga_jual.toString(); formatRupiahInput(document.getElementById('edit-r-harga-jual'));
+            
             tempKomposisiEdit = menuObj.resep_detail.map(det => { if(!det.bahan_baku) return null; return { bahan_baku_id: det.bahan_baku_id, nama: det.bahan_baku.nama, satuan: det.bahan_baku.satuan, qty: det.qty, subtotal: det.qty * det.bahan_baku.harga }; }).filter(item => item !== null);
             renderKomposisi('edit'); document.getElementById('modal-edit-resep').classList.remove('hidden');
         }
