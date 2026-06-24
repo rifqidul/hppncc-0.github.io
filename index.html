@@ -25,7 +25,6 @@
 </head>
 <body>
   <main class="container">
-    <!-- Header -->
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 1.5rem;">
       <h1 style="margin:0;">🍵 Kalkulator HPP & Resep</h1>
       <div class="login-area">
@@ -35,7 +34,6 @@
       </div>
     </div>
 
-    <!-- Navigasi Tab -->
     <nav>
       <ul style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
         <li><a href="#" data-tab="bahan" class="tab-link tab-active">🧂 Bahan Baku</a></li>
@@ -45,30 +43,31 @@
       </ul>
     </nav>
 
-    <!-- Konten Dinamis -->
     <div id="tab-content"></div>
   </main>
 
-  <!-- Supabase JS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     // ======================== KONFIGURASI ========================
     const SUPABASE_URL = 'https://mslsgobvzzxxkwfvpjhx.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1zbHNnb2J2enp4eGt3ZnZwamh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMzAzMDEsImV4cCI6MjA5NzgwNjMwMX0.V7pUmC3En3O0pc3VamJUm9eq7cnB7UFLi333LmtnJqQ';
     
-    // Inisialisasi Supabase
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // Inisialisasi Supabase - Diganti menjadi supabaseClient untuk mencegah konflik variabel global
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     // =============================================================
 
     // State global
     let currentUser = null;
 
     // Cek session awal & listener perubahan auth
-    supabase.auth.onAuthStateChange((event, session) => {
+    supabaseClient.auth.onAuthStateChange((event, session) => {
       currentUser = session?.user ?? null;
       updateAuthUI();
-      const activeTab = document.querySelector('.tab-active');
-      if (activeTab) loadTab(activeTab.dataset.tab);
+      // Hanya muat ulang tab jika user sengaja login/logout, cegah double-render di awal
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+        const activeTab = document.querySelector('.tab-active');
+        if (activeTab) loadTab(activeTab.dataset.tab);
+      }
     });
 
     function updateAuthUI() {
@@ -93,12 +92,13 @@
         if (!email) return;
         const password = prompt('Password:');
         if (!password) return;
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        
+        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
         if (error) alert('Login gagal: ' + error.message);
       });
 
       document.getElementById('logoutBtn').addEventListener('click', async () => {
-        await supabase.auth.signOut();
+        await supabaseClient.auth.signOut();
       });
 
       document.querySelectorAll('.tab-link').forEach(link => {
@@ -110,12 +110,14 @@
         });
       });
 
+      // Muat tab awal
       loadTab('bahan');
     });
 
     async function loadTab(tab) {
       const content = document.getElementById('tab-content');
       if (!content) return;
+      content.innerHTML = '<p>Memuat data...</p>'; // Indikator loading ringan
       switch(tab) {
         case 'bahan': content.innerHTML = await renderBahanBaku(); break;
         case 'menu': content.innerHTML = await renderMenu(); break;
@@ -127,7 +129,7 @@
 
     // ===================== BAHAN BAKU =====================
     async function fetchBahanBaku() {
-      const { data, error } = await supabase.from('bahan_baku').select('*').order('nama');
+      const { data, error } = await supabaseClient.from('bahan_baku').select('*').order('nama');
       if (error) { alert('Gagal mengambil bahan baku: ' + error.message); return []; }
       return data;
     }
@@ -146,14 +148,15 @@
         html += `</tr>`;
       });
       html += `</tbody></table>`;
+      
       setTimeout(() => {
         if (currentUser) {
           const btnTambah = document.getElementById('tambahBahan');
           if (btnTambah) btnTambah.addEventListener('click', tambahBahanForm);
           document.querySelectorAll('.hapus-bahan').forEach(btn => {
             btn.addEventListener('click', async () => {
-              if (confirm('Hapus?')) {
-                await supabase.from('bahan_baku').delete().eq('id', btn.dataset.id);
+              if (confirm('Hapus bahan baku ini?')) {
+                await supabaseClient.from('bahan_baku').delete().eq('id', btn.dataset.id);
                 await loadTab('bahan');
               }
             });
@@ -175,12 +178,13 @@
       const div = document.createElement('div');
       div.innerHTML = html;
       document.getElementById('tab-content').prepend(div);
+      
       document.getElementById('simpanBahan').addEventListener('click', async () => {
         const nama = document.getElementById('namaBahan').value.trim();
         const satuan = document.getElementById('satuanBahan').value.trim();
         const harga = parseFloat(document.getElementById('hargaBahan').value);
-        if (!nama || !satuan || isNaN(harga)) return alert('Lengkapi data');
-        const { error } = await supabase.from('bahan_baku').insert({ nama, satuan, harga_per_satuan: harga });
+        if (!nama || !satuan || isNaN(harga)) return alert('Lengkapi semua data');
+        const { error } = await supabaseClient.from('bahan_baku').insert({ nama, satuan, harga_per_satuan: harga });
         if (error) alert(error.message);
         else { div.remove(); await loadTab('bahan'); }
       });
@@ -189,7 +193,7 @@
 
     // ===================== MENU / RESEP =====================
     async function fetchMenu() {
-      const { data, error } = await supabase.from('menu').select('*').order('nama');
+      const { data, error } = await supabaseClient.from('menu').select('*').order('nama');
       if (error) { alert(error.message); return []; }
       return data;
     }
@@ -209,20 +213,21 @@
         html += `</tr>`;
       });
       html += `</tbody></table>`;
+      
       setTimeout(() => {
         if (currentUser) {
           const btnTambah = document.getElementById('tambahMenu');
           if (btnTambah) btnTambah.addEventListener('click', () => formMenu());
           document.querySelectorAll('.edit-menu').forEach(btn => {
             btn.addEventListener('click', async () => {
-              const { data } = await supabase.from('menu').select('*').eq('id', btn.dataset.id).single();
+              const { data } = await supabaseClient.from('menu').select('*').eq('id', btn.dataset.id).single();
               formMenu(data);
             });
           });
           document.querySelectorAll('.hapus-menu').forEach(btn => {
             btn.addEventListener('click', async () => {
               if (confirm('Hapus menu?')) {
-                await supabase.from('menu').delete().eq('id', btn.dataset.id);
+                await supabaseClient.from('menu').delete().eq('id', btn.dataset.id);
                 await loadTab('menu');
               }
             });
@@ -234,8 +239,8 @@
 
     async function formMenu(menuData = null) {
       const menu = menuData || {};
-      const { data: bahanList } = await supabase.from('bahan_baku').select('*');
-      const existingResep = menu.id ? (await supabase.from('resep_bahan').select('*, bahan_baku(*)').eq('menu_id', menu.id)).data : [];
+      const { data: bahanList } = await supabaseClient.from('bahan_baku').select('*');
+      const existingResep = menu.id ? (await supabaseClient.from('resep_bahan').select('*, bahan_baku(*)').eq('menu_id', menu.id)).data : [];
       let html = `<article><h3>${menu.id ? 'Edit' : 'Tambah'} Menu</h3>
         <input id="namaMenu" placeholder="Nama Menu" value="${menu.nama || ''}"><br>
         <input id="kategoriMenu" placeholder="Kategori (contoh: Beverage)" value="${menu.kategori || ''}"><br>
@@ -248,28 +253,33 @@
         <button id="tambahResepRow" class="secondary">+ Tambah Bahan</button><br><br>
         <button id="simpanMenu">💾 Simpan Menu</button>
         <button id="batalMenu" class="secondary">Batal</button></article>`;
+      
       const div = document.createElement('div');
       div.innerHTML = html;
       document.getElementById('tab-content').prepend(div);
+      
       document.getElementById('tambahResepRow').addEventListener('click', () => {
         document.getElementById('resepContainer').insertAdjacentHTML('beforeend', resepRow(null, 0, bahanList));
       });
+      
       document.getElementById('simpanMenu').addEventListener('click', async () => {
         const nama = document.getElementById('namaMenu').value.trim();
         const kategori = document.getElementById('kategoriMenu').value.trim();
         const sub = document.getElementById('subMenu').value.trim();
         const harga = parseFloat(document.getElementById('hargaJual').value);
         if (!nama || !kategori || isNaN(harga)) return alert('Nama, Kategori, dan Harga Jual wajib diisi');
+        
         let menuId = menu.id;
         if (!menuId) {
-          const { data, error } = await supabase.from('menu').insert({ nama, kategori, sub_kategori: sub, harga_jual: harga }).select();
+          const { data, error } = await supabaseClient.from('menu').insert({ nama, kategori, sub_kategori: sub, harga_jual: harga }).select();
           if (error) return alert(error.message);
           menuId = data[0].id;
         } else {
-          const { error } = await supabase.from('menu').update({ nama, kategori, sub_kategori: sub, harga_jual: harga }).eq('id', menuId);
+          const { error } = await supabaseClient.from('menu').update({ nama, kategori, sub_kategori: sub, harga_jual: harga }).eq('id', menuId);
           if (error) return alert(error.message);
-          await supabase.from('resep_bahan').delete().eq('menu_id', menuId);
+          await supabaseClient.from('resep_bahan').delete().eq('menu_id', menuId);
         }
+        
         const rows = document.querySelectorAll('.resep-row');
         for (let row of rows) {
           const select = row.querySelector('.bahan-select');
@@ -278,7 +288,7 @@
           const bahanId = select.value;
           const jumlah = parseFloat(input.value);
           if (bahanId && jumlah > 0) {
-            await supabase.from('resep_bahan').insert({ menu_id: menuId, bahan_baku_id: bahanId, jumlah });
+            await supabaseClient.from('resep_bahan').insert({ menu_id: menuId, bahan_baku_id: bahanId, jumlah });
           }
         }
         div.remove();
@@ -297,7 +307,7 @@
 
     // ===================== DAFTAR HPP =====================
     async function fetchHPP() {
-      const { data: menus } = await supabase.from('menu').select('*, resep_bahan(jumlah, bahan_baku(harga_per_satuan, nama, satuan))');
+      const { data: menus } = await supabaseClient.from('menu').select('*, resep_bahan(jumlah, bahan_baku(harga_per_satuan, nama, satuan))');
       if (!menus) return [];
       return menus.map(m => {
         const hpp = m.resep_bahan.reduce((sum, rb) => sum + (rb.jumlah * (rb.bahan_baku?.harga_per_satuan || 0)), 0);
@@ -324,6 +334,7 @@
         html += `<tr><td>${d.nama}</td><td>${d.kategori} - ${d.sub_kategori || ''}</td><td>Rp ${d.hpp.toFixed(0)}</td><td>Rp ${d.harga_jual}</td><td class="${marginClass}">Rp ${d.margin.toFixed(0)}</td><td>${d.persen_hpp.toFixed(1)}%</td></tr>`;
       });
       html += `</tbody></table>`;
+      
       setTimeout(() => {
         document.querySelectorAll('.sort-btn').forEach(btn => btn.addEventListener('click', () => sortTable(btn.dataset.sort)));
       }, 100);
