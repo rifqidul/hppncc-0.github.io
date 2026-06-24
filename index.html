@@ -32,7 +32,6 @@
             <div class="hidden md:flex items-center gap-6">
                 <div class="flex gap-5 font-semibold text-gray-500 text-sm">
                     <button onclick="switchTab('tab-direktori')" id="btn-tab-direktori" class="btn-tab active hover:text-blue-600">Directory Menu</button>
-                    <!-- Tambahan: admin-only hidden pada Bahan Baku -->
                     <button onclick="switchTab('tab-bahan-baku')" id="btn-tab-bahan-baku" class="btn-tab admin-only hidden hover:text-blue-600">Bahan Baku</button>
                     <button onclick="switchTab('tab-input-hpp')" id="btn-tab-input-hpp" class="btn-tab admin-only hidden hover:text-blue-600">Input Resep</button>
                     <button onclick="switchTab('tab-settings')" id="btn-tab-settings" class="btn-tab admin-only hidden hover:text-blue-600">⚙️ Settings</button>
@@ -67,7 +66,6 @@
                 <button id="btn-logout-mobile" onclick="toggleMobileMenu(); logoutAdmin()" class="bg-gradient-to-r from-red-600 to-red-500 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:shadow-lg transition-shadow text-center hidden">Logout Admin</button>
             </div>
             <button onclick="switchTab('tab-direktori'); toggleMobileMenu()" id="btn-tab-direktori-mobile" class="btn-tab-mobile bg-blue-50 text-blue-700 font-bold text-left py-3 px-4 rounded-xl transition-colors">📑 Directory Menu</button>
-            <!-- Tambahan: admin-only hidden pada Bahan Baku Mobile -->
             <button onclick="switchTab('tab-bahan-baku'); toggleMobileMenu()" id="btn-tab-bahan-baku-mobile" class="btn-tab-mobile admin-only hidden text-gray-600 font-semibold text-left py-3 px-4 rounded-xl hover:bg-gray-100 transition-colors">📦 Bahan Baku</button>
             <button onclick="switchTab('tab-input-hpp'); toggleMobileMenu()" id="btn-tab-input-hpp-mobile" class="btn-tab-mobile admin-only hidden text-gray-600 font-semibold text-left py-3 px-4 rounded-xl hover:bg-gray-100 transition-colors">✍️ Input Resep</button>
             <button onclick="switchTab('tab-settings'); toggleMobileMenu()" id="btn-tab-settings-mobile" class="btn-tab-mobile admin-only hidden text-gray-600 font-semibold text-left py-3 px-4 rounded-xl hover:bg-gray-100 transition-colors">⚙️ Settings Menu</button>
@@ -80,21 +78,25 @@
         <!-- TAB 1: DIREKTORI RESEP -->
         <div id="tab-direktori" class="tab-content active">
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-                <div>
+                <div class="mb-2 md:mb-0">
                     <h2 class="text-2xl font-black text-gray-800">Directory Recipe Card</h2>
                     <p class="text-sm text-gray-500 mt-1">Panduan komposisi dan perhitungan HPP Menu.</p>
                 </div>
-                <div class="flex flex-wrap gap-2 w-full md:w-auto">
-                    <div class="relative flex-grow md:flex-grow-0">
-                        <span class="absolute left-3 top-2.5 text-gray-400">🔍</span>
-                        <input type="text" id="search-resep" placeholder="Cari menu..." class="pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm w-full focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none" oninput="loadDirektori()">
+                
+                <!-- Layout Pencarian Diperbaiki (Satu Baris di Mobile) -->
+                <div class="flex flex-row w-full md:w-auto gap-2 items-center">
+                    <div class="relative flex-1 md:w-56">
+                        <span class="absolute left-3 top-2 text-gray-400">🔍</span>
+                        <input type="text" id="search-resep" placeholder="Cari..." class="pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm w-full focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none transition-all" oninput="loadDirektori()">
                     </div>
-                    <select id="sort-resep" class="py-2 px-3 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-400 outline-none cursor-pointer" onchange="loadDirektori()">
-                        <option value="nama">Sort by Nama (A-Z)</option>
-                        <option value="hpp_asc">Sort by %HPP (Rendah ke Tinggi)</option>
-                        <option value="hpp_desc">Sort by %HPP (Tinggi ke Rendah)</option>
+                    <select id="sort-resep" class="py-2 px-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-400 outline-none cursor-pointer flex-shrink-0 w-[90px] sm:w-[120px]" onchange="loadDirektori()">
+                        <option value="nama">A - Z</option>
+                        <option value="hpp_asc">HPP ⬆</option>
+                        <option value="hpp_desc">HPP ⬇</option>
                     </select>
-                    <button onclick="exportResepToExcel()" class="admin-only hidden bg-green-50 text-green-700 border border-green-300 text-sm px-4 py-2 rounded-lg hover:bg-green-100 font-bold shadow-sm flex items-center gap-2"><span>📥</span> Export</button>
+                    <button onclick="exportResepToExcel()" class="admin-only hidden bg-green-50 text-green-700 border border-green-300 text-sm px-3 py-2 rounded-lg hover:bg-green-100 font-bold shadow-sm flex items-center justify-center gap-1.5 flex-shrink-0 transition-colors">
+                        <span class="text-base leading-none">📥</span> <span class="hidden sm:inline">Export</span>
+                    </button>
                 </div>
             </div>
             <div id="recipe-wrapper" class="space-y-12"></div>
