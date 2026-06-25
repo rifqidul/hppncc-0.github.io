@@ -86,3 +86,26 @@ input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
     opacity: 1;
 }
+
+/* [UPDATE] Ikon sort di header tabel summary */
+.sortable {
+    cursor: pointer;
+    user-select: none;
+}
+.sortable .sort-icon {
+    display: inline-block;
+    margin-left: 4px;
+    font-size: 0.7rem;
+    color: #94a3b8;
+    transition: color 0.2s;
+}
+.sortable:hover .sort-icon {
+    color: #2563eb;
+}
+
+/* checkbox styling */
+.summary-checkbox, #select-all-summary {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
