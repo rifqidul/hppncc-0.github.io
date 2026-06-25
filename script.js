@@ -71,7 +71,10 @@ function switchTab(tabId) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active', 'hidden')); document.querySelectorAll('.tab-content').forEach(el => { if(el.id !== tabId) el.classList.add('hidden') });
     document.querySelectorAll('.btn-tab').forEach(el => el.classList.remove('active')); document.querySelectorAll('.btn-tab-mobile').forEach(el => { el.classList.remove('bg-blue-50', 'text-blue-700', 'font-bold'); el.classList.add('text-gray-600', 'font-semibold'); });
     document.getElementById(tabId).classList.add('active'); document.getElementById(tabId).classList.remove('hidden'); document.getElementById('btn-' + tabId).classList.add('active'); const mobileBtn = document.getElementById('btn-' + tabId + '-mobile'); if(mobileBtn) { mobileBtn.classList.remove('text-gray-600', 'font-semibold'); mobileBtn.classList.add('bg-blue-50', 'text-blue-700', 'font-bold'); }
-    if(tabId === 'tab-bahan-baku') { bbCurrentPage = 1; loadBahanBaku(); } if(tabId === 'tab-input-hpp') loadDropdownBahanBaku('baru'); if(tabId === 'tab-direktori') loadDirektori();
+    if(tabId === 'tab-bahan-baku') { bbCurrentPage = 1; loadBahanBaku(); } 
+    if(tabId === 'tab-input-hpp') { loadDropdownBahanBaku('baru'); }
+    if(tabId === 'tab-direktori') loadDirektori();
+    if(tabId === 'tab-kategori') { renderTabelManajemenKategori(); }
 }
 
 window.addEventListener('click', function(e) { if (!e.target.closest('button[onclick*="toggleKebabMenu"]')) { document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.add('hidden')); } if (!e.target.closest('.bb-autocomplete')) { const d1 = document.getElementById('r-dropdown-list'); const d2 = document.getElementById('edit-r-dropdown-list'); if(d1) d1.classList.add('hidden'); if(d2) d2.classList.add('hidden'); } });
@@ -83,6 +86,13 @@ async function loadKategoriDB() {
     if (!error && data) {
         listKategori = data.filter(d => d.jenis === 'Kategori');
         listSubKategori = data.filter(d => d.jenis === 'Sub-Kategori');
+        // Pastikan dropdown di-render
+        renderDropdownKategori();
+        renderTabelManajemenKategori();
+    } else {
+        // Jika tabel belum ada, buat array kosong
+        listKategori = [];
+        listSubKategori = [];
         renderDropdownKategori();
         renderTabelManajemenKategori();
     }
@@ -131,6 +141,53 @@ async function editKategoriManajemen(id, jenis, oldName) {
 async function hapusKategoriManajemen(id, nama) {
     if(confirm(`Yakin hapus master "${nama}"? (Menu yang menggunakan nama ini tidak akan terhapus, hanya master teksnya saja)`)) {
         showLoading(); await supabaseClient.from('kategori_db').delete().eq('id', id); await loadKategoriDB(); hideLoading();
+    }
+}
+
+// ================= FITUR SINKRONISASI KATEGORI DARI RESEP =================
+async function sinkronisasiKategoriDariResep() {
+    showLoading();
+    // Ambil semua resep
+    const { data: resepList, error } = await supabaseClient.from('resep').select('kategori, sub_kategori');
+    if (error) { hideLoading(); alert('Gagal mengambil data resep'); return; }
+
+    // Kumpulkan nilai unik
+    const kategoriSet = new Set();
+    const subSet = new Set();
+    resepList.forEach(r => {
+        if (r.kategori) kategoriSet.add(r.kategori.trim());
+        if (r.sub_kategori) subSet.add(r.sub_kategori.trim());
+    });
+
+    // Ambil master yang sudah ada
+    const { data: existing } = await supabaseClient.from('kategori_db').select('nama, jenis');
+    const existingMap = {};
+    existing.forEach(e => existingMap[e.jenis + '|' + e.nama] = true);
+
+    // Siapkan data baru
+    const inserts = [];
+    kategoriSet.forEach(nama => {
+        if (!existingMap['Kategori|' + nama]) inserts.push({ jenis: 'Kategori', nama });
+    });
+    subSet.forEach(nama => {
+        if (!existingMap['Sub-Kategori|' + nama]) inserts.push({ jenis: 'Sub-Kategori', nama });
+    });
+
+    if (inserts.length === 0) {
+        hideLoading();
+        alert('Semua kategori sudah tersinkronisasi.');
+        return;
+    }
+
+    // Simpan ke database
+    const { error: insertError } = await supabaseClient.from('kategori_db').insert(inserts);
+    hideLoading();
+    if (insertError) {
+        alert('Gagal menyinkronkan: ' + insertError.message);
+    } else {
+        alert(`${inserts.length} kategori/sub-kategori berhasil diimpor dari resep!`);
+        await loadKategoriDB(); // refresh
+        loadDirektori(); // refresh tampilan
     }
 }
 
@@ -198,7 +255,6 @@ function updateKalkulasiHPP(mode) {
 }
 
 async function simpanResepFinal() {
-    // Note: Nilai Kategori dan Sub sekarang ditarik dari select dropdown
     const nama = document.getElementById('r-nama').value.trim(); const kategori = document.getElementById('r-kategori').value; const sub = document.getElementById('r-sub').value; const harga_jual = getNilaiAsli(document.getElementById('r-harga-jual').value); const yield_porsi = parseFloat(document.getElementById('r-yield').value) || 1;
     if(!nama || !kategori || !sub || tempKomposisiBaru.length === 0) return alert("Lengkapi data menu (termasuk kategori) dan minimal 1 resep bahan!");
     showLoading(); const { data: resepData, error: resepErr } = await supabaseClient.from('resep').insert([{ nama, kategori, sub_kategori: sub, harga_jual, yield: yield_porsi }]).select();
@@ -318,9 +374,7 @@ function downloadTemplateBahanBaku() { const ws = XLSX.utils.json_to_sheet([{ "N
 function exportBahanBakuToExcel() { const ws = XLSX.utils.json_to_sheet(bahanBakuList.map(i => ({"ID":i.id,"Nama Bahan":i.nama,"Satuan Beli":i.satuan_beli,"Harga Beli":i.harga_beli,"Konversi":i.nilai_konversi,"Satuan Resep":i.satuan,"Harga per Satuan":i.harga}))); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Data"); XLSX.writeFile(wb, "BahanBaku_Export.xlsx"); }
 function eksekusiImportBahanBaku(mode) { const reader = new FileReader(); reader.onload = async (e) => { try { const rows = XLSX.utils.sheet_to_json(XLSX.read(new Uint8Array(e.target.result), { type: 'array' }).Sheets[XLSX.read(new Uint8Array(e.target.result), { type: 'array' }).SheetNames[0]]); const cleanData = rows.map(r => { const h=parseFloat(r["Harga Beli"]||0); const k=parseFloat(r["Nilai Konversi (Yield)"]||1); return { nama:String(r["Nama Bahan"]).trim(), satuan_beli:r["Satuan Beli"], harga_beli:h, nilai_konversi:k, satuan:r["Satuan Pemakaian Resep"], harga:h/k };}).filter(r=>r.nama && r.nama !== "undefined"); if(cleanData.length === 0) { hideLoading(); alert("Data kosong!"); batalImport(); return; } let successCount = 0; let failCount = 0; if(mode === 'replace') { const { error: delError } = await supabaseClient.from('bahan_baku').delete().neq('id', 0); if(delError && delError.code === '23503') { hideLoading(); alert("GAGAL: Bahan baku sedang dipakai di Resep."); batalImport(); return; } const { error: insError } = await supabaseClient.from('bahan_baku').insert(cleanData); if(insError) { failCount = cleanData.length; } else { successCount = cleanData.length; } } else if (mode === 'modify') { const { data: ext } = await supabaseClient.from('bahan_baku').select('*'); const nMap = {}; ext.forEach(i => nMap[i.nama.toLowerCase()] = i.id); for(let r of cleanData) { const eId = nMap[r.nama.toLowerCase()]; if(eId) { const { error } = await supabaseClient.from('bahan_baku').update(r).eq('id', eId); if(error) failCount++; else successCount++; } else { const { error } = await supabaseClient.from('bahan_baku').insert([r]); if(error) failCount++; else successCount++; } } } hideLoading(); loadBahanBaku(); batalImport(); showSummaryModal(failCount === 0, 'Import Bahan Baku Selesai', successCount, failCount); } catch (err) { hideLoading(); alert("Terjadi kesalahan sistem saat membaca Excel."); batalImport(); } }; reader.readAsArrayBuffer(fileImportTertunda); }
 
-// PERUBAHAN: Menambahkan Kolom "Yield (Porsi)" ke dalam template Export dan Import
 function downloadTemplateResep() { 
-    // Template bersih tanpa sirup sebagai referensi best practice formulasi
     const ws = XLSX.utils.json_to_sheet([{"Nama Menu":"Iced Choco Banana","Kategori":"Beverage","Sub Kategori":"Non-Coffee","Harga Jual":28000,"Yield (Porsi)":1,"Nama Bahan Baku":"Fresh Milk UHT","Qty":160}]); 
     const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Template"); XLSX.writeFile(wb, "Template_Resep.xlsx"); 
 }
@@ -341,7 +395,6 @@ function eksekusiImportResep(mode) {
             const { data: bbData } = await supabaseClient.from('bahan_baku').select('*'); const bbMap = {}; bbData.forEach(b => bbMap[b.nama.toLowerCase().trim()] = b.id); 
             let grp = {}; 
             
-            // PERUBAHAN: Membaca nilai "Yield (Porsi)" dari excel
             rows.forEach(r => { 
                 const m = r["Menu"] || r["Nama Menu"]; if(!m) return; 
                 if(!grp[m]) grp[m] = { nama:m, kategori:r["Kategori"]||"-", sub_kategori:r["Sub Kategori"]||"-", harga_jual:parseFloat(r["Harga Jual"]||0), yield_porsi: parseFloat(r["Yield (Porsi)"]||1), ing:[] }; 
@@ -375,5 +428,9 @@ function eksekusiImportResep(mode) {
 window.onload = async () => { 
     await inisialisasiAuth(); 
     await loadKategoriDB(); 
+    // Jika master kosong, otomatis sinkronisasi dari resep
+    if (listKategori.length === 0 && listSubKategori.length === 0) {
+        await sinkronisasiKategoriDariResep();
+    }
     await loadDirektori(); 
 };
