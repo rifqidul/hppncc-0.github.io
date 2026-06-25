@@ -80,7 +80,7 @@ function switchTab(tabId) {
 window.addEventListener('click', function(e) { if (!e.target.closest('button[onclick*="toggleKebabMenu"]')) { document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.add('hidden')); } if (!e.target.closest('.bb-autocomplete')) { const d1 = document.getElementById('r-dropdown-list'); const d2 = document.getElementById('edit-r-dropdown-list'); if(d1) d1.classList.add('hidden'); if(d2) d2.classList.add('hidden'); } });
 function toggleKebabMenu(event, menuId) { event.stopPropagation(); const targetMenu = document.getElementById(menuId); const isHidden = targetMenu.classList.contains('hidden'); document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.add('hidden')); if (isHidden) targetMenu.classList.remove('hidden'); }
 
-// ================= LOGIKA DATABASE KATEGORI (dengan modal) =================
+// ================= LOGIKA DATABASE KATEGORI (dengan modal & MERGE) =================
 async function loadKategoriDB() {
     const { data, error } = await supabaseClient.from('kategori_db').select('*').order('nama');
     if (!error && data) {
@@ -134,35 +134,86 @@ function bukaModalEditKategori(id, jenis, nama) {
     document.getElementById('modal-kategori-input').select();
 }
 
-// Simpan dari modal (tambah atau edit)
+// Simpan dari modal (tambah atau edit) dengan logika MERGE
 async function simpanKategoriModal() {
     const id = document.getElementById('modal-kategori-id').value;
     const jenis = document.getElementById('modal-kategori-jenis').value;
-    const nama = document.getElementById('modal-kategori-input').value.trim();
-    if(!nama) { alert('Nama tidak boleh kosong!'); return; }
+    const namaBaru = document.getElementById('modal-kategori-input').value.trim();
+    if(!namaBaru) { alert('Nama tidak boleh kosong!'); return; }
 
     showLoading();
-    if(id) {
-        // Edit
-        const oldName = listKategori.concat(listSubKategori).find(k => k.id == id)?.nama || '';
-        await supabaseClient.from('kategori_db').update({ nama }).eq('id', id);
-        const fieldTarget = jenis === 'Kategori' ? 'kategori' : 'sub_kategori';
-        let updatePayload = {}; updatePayload[fieldTarget] = nama;
-        await supabaseClient.from('resep').update(updatePayload).eq(fieldTarget, oldName);
-    } else {
-        // Tambah
-        await supabaseClient.from('kategori_db').insert([{ jenis, nama }]);
+    try {
+        if(id) {
+            // EDIT
+            const allItems = listKategori.concat(listSubKategori);
+            const oldItem = allItems.find(k => k.id == id);
+            if(!oldItem) { hideLoading(); alert('Data tidak ditemukan!'); return; }
+            const oldNama = oldItem.nama;
+            
+            // Jika nama sama persis (case sensitive), tidak perlu proses
+            if(oldNama === namaBaru) {
+                hideLoading();
+                closeModal('modal-kategori');
+                alert('Tidak ada perubahan.');
+                return;
+            }
+
+            // Cek apakah ada item lain dengan nama yang sama (case insensitive)
+            const duplicate = allItems.find(k => k.id != id && k.jenis === jenis && k.nama.toLowerCase() === namaBaru.toLowerCase());
+            
+            if(duplicate) {
+                // Ada duplikat -> MERGE: update semua resep dari oldNama ke duplicate.nama, lalu hapus id lama
+                const fieldTarget = jenis === 'Kategori' ? 'kategori' : 'sub_kategori';
+                let updatePayload = {}; updatePayload[fieldTarget] = duplicate.nama;
+                await supabaseClient.from('resep').update(updatePayload).eq(fieldTarget, oldNama);
+                // Hapus master lama
+                await supabaseClient.from('kategori_db').delete().eq('id', id);
+                await loadKategoriDB();
+                if(document.getElementById('tab-direktori').classList.contains('active')) loadDirektori();
+                hideLoading();
+                closeModal('modal-kategori');
+                alert(`Nama "${oldNama}" digabung ke "${duplicate.nama}" karena sudah ada. Semua resep terkait telah diperbarui.`);
+                return;
+            } else {
+                // Tidak ada duplikat, update biasa
+                await supabaseClient.from('kategori_db').update({ nama: namaBaru }).eq('id', id);
+                const fieldTarget = jenis === 'Kategori' ? 'kategori' : 'sub_kategori';
+                let updatePayload = {}; updatePayload[fieldTarget] = namaBaru;
+                await supabaseClient.from('resep').update(updatePayload).eq(fieldTarget, oldNama);
+                await loadKategoriDB();
+                if(document.getElementById('tab-direktori').classList.contains('active')) loadDirektori();
+                hideLoading();
+                closeModal('modal-kategori');
+                alert('Perubahan berhasil!');
+                return;
+            }
+        } else {
+            // TAMBAH BARU: cek duplikat
+            const allItems = listKategori.concat(listSubKategori);
+            const duplicate = allItems.find(k => k.jenis === jenis && k.nama.toLowerCase() === namaBaru.toLowerCase());
+            if(duplicate) {
+                hideLoading();
+                alert(`Nama "${namaBaru}" sudah ada!`);
+                return;
+            }
+            await supabaseClient.from('kategori_db').insert([{ jenis, nama: namaBaru }]);
+            await loadKategoriDB();
+            hideLoading();
+            closeModal('modal-kategori');
+            alert('Penambahan berhasil!');
+        }
+    } catch (e) {
+        hideLoading();
+        alert('Terjadi kesalahan: ' + e.message);
     }
-    await loadKategoriDB();
-    if(document.getElementById('tab-direktori').classList.contains('active')) loadDirektori();
-    hideLoading();
-    closeModal('modal-kategori');
-    alert(`${id ? 'Perubahan' : 'Penambahan'} berhasil!`);
 }
 
 async function hapusKategoriManajemen(id, nama) {
     if(confirm(`Yakin hapus master "${nama}"? (Menu yang menggunakan nama ini tidak akan terhapus, hanya master teksnya saja)`)) {
-        showLoading(); await supabaseClient.from('kategori_db').delete().eq('id', id); await loadKategoriDB(); hideLoading();
+        showLoading(); 
+        await supabaseClient.from('kategori_db').delete().eq('id', id); 
+        await loadKategoriDB(); 
+        hideLoading();
     }
 }
 
