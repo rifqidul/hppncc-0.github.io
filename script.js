@@ -134,12 +134,15 @@ function bukaModalEditKategori(id, jenis, nama) {
     document.getElementById('modal-kategori-input').select();
 }
 
-// Simpan dari modal (tambah atau edit) dengan logika MERGE
+// Simpan dari modal (tambah atau edit) dengan logika MERGE yang lebih kuat
 async function simpanKategoriModal() {
     const id = document.getElementById('modal-kategori-id').value;
     const jenis = document.getElementById('modal-kategori-jenis').value;
-    const namaBaru = document.getElementById('modal-kategori-input').value.trim();
+    let namaBaru = document.getElementById('modal-kategori-input').value.trim();
     if(!namaBaru) { alert('Nama tidak boleh kosong!'); return; }
+
+    // Normalisasi spasi (hapus spasi berlebih)
+    namaBaru = namaBaru.replace(/\s+/g, ' ');
 
     showLoading();
     try {
@@ -150,7 +153,7 @@ async function simpanKategoriModal() {
             if(!oldItem) { hideLoading(); alert('Data tidak ditemukan!'); return; }
             const oldNama = oldItem.nama;
             
-            // Jika nama sama persis (case sensitive), tidak perlu proses
+            // Jika nama sama persis (setelah trim), tidak ada perubahan
             if(oldNama === namaBaru) {
                 hideLoading();
                 closeModal('modal-kategori');
@@ -158,21 +161,23 @@ async function simpanKategoriModal() {
                 return;
             }
 
-            // Cek apakah ada item lain dengan nama yang sama (case insensitive)
+            // Cari duplikat (case insensitive, selain dirinya sendiri)
             const duplicate = allItems.find(k => k.id != id && k.jenis === jenis && k.nama.toLowerCase() === namaBaru.toLowerCase());
             
             if(duplicate) {
-                // Ada duplikat -> MERGE: update semua resep dari oldNama ke duplicate.nama, lalu hapus id lama
+                // Ada duplikat -> MERGE: update semua resep dari oldNama ke duplicate.nama, lalu hapus item yang sedang diedit (oldItem)
                 const fieldTarget = jenis === 'Kategori' ? 'kategori' : 'sub_kategori';
                 let updatePayload = {}; updatePayload[fieldTarget] = duplicate.nama;
+                // Update semua resep yang masih menggunakan oldNama
                 await supabaseClient.from('resep').update(updatePayload).eq(fieldTarget, oldNama);
-                // Hapus master lama
+                // Hapus item yang sedang diedit (oldItem), karena kita pertahankan duplicate
                 await supabaseClient.from('kategori_db').delete().eq('id', id);
+                // Reload data
                 await loadKategoriDB();
                 if(document.getElementById('tab-direktori').classList.contains('active')) loadDirektori();
                 hideLoading();
                 closeModal('modal-kategori');
-                alert(`Nama "${oldNama}" digabung ke "${duplicate.nama}" karena sudah ada. Semua resep terkait telah diperbarui.`);
+                alert(`Nama "${oldNama}" digabung ke "${duplicate.nama}" (sudah ada). Semua resep terkait telah diperbarui.`);
                 return;
             } else {
                 // Tidak ada duplikat, update biasa
@@ -207,6 +212,39 @@ async function simpanKategoriModal() {
         alert('Terjadi kesalahan: ' + e.message);
     }
 }
+
+// Fungsi untuk membersihkan duplikat yang sudah ada (opsional, panggil dari konsol jika perlu)
+async function bersihkanDuplikatKategori() {
+    if(!confirm('Ini akan menghapus duplikat kategori/sub-kategori (case insensitive). Lanjutkan?')) return;
+    showLoading();
+    const { data, error } = await supabaseClient.from('kategori_db').select('*');
+    if(error) { hideLoading(); alert('Gagal mengambil data'); return; }
+    
+    const groups = {};
+    data.forEach(item => {
+        const key = item.jenis + '|' + item.nama.toLowerCase();
+        if(!groups[key]) groups[key] = [];
+        groups[key].push(item);
+    });
+
+    let deleted = 0;
+    for(let key in groups) {
+        if(groups[key].length > 1) {
+            // Pertahankan satu (yang pertama), hapus sisanya
+            const keep = groups[key][0];
+            const toDelete = groups[key].slice(1);
+            for(let del of toDelete) {
+                await supabaseClient.from('kategori_db').delete().eq('id', del.id);
+                deleted++;
+            }
+        }
+    }
+    await loadKategoriDB();
+    hideLoading();
+    alert(`Duplikat berhasil dibersihkan. ${deleted} item dihapus.`);
+}
+// Expose ke global agar bisa dipanggil dari konsol
+window.bersihkanDuplikatKategori = bersihkanDuplikatKategori;
 
 async function hapusKategoriManajemen(id, nama) {
     if(confirm(`Yakin hapus master "${nama}"? (Menu yang menggunakan nama ini tidak akan terhapus, hanya master teksnya saja)`)) {
