@@ -177,16 +177,23 @@ async function loginAdmin() {
     btn.innerText = "Memverifikasi...";
     const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
     btn.innerText = "Autentikasi";
-    if (error) alert("Gagal Login: " + error.message);
-    else {
+    if (error) {
+        alert("Gagal Login: " + error.message);
+    } else {
         closeModal('modal-login');
         document.getElementById('login-email').value = '';
         document.getElementById('login-password').value = '';
+        window.location.reload();
     }
 }
 
 async function logoutAdmin() {
+    const confirmLogout = confirm("Apakah Anda yakin ingin keluar dari sistem?");
+    if (!confirmLogout) return;
+    showLoading();
     await supabaseClient.auth.signOut();
+    hideLoading();
+    window.location.reload();
 }
 
 function switchTab(tabId) {
@@ -948,22 +955,22 @@ function renderTableSummary() {
             <td class="p-4 text-center ${textHppColor}">${m.hppPersen.toFixed(1)}%</td>
             <td class="p-4 text-right font-bold ${m.margin < 0 ? 'text-red-500':'text-emerald-600'}">${formatRp(m.margin)}</td>
         `;
-        // [PERBAIKAN 3] DROPDOWN KE BAWAH (top-full)
+        // [PERBAIKAN 4] DROPDOWN KE KIRI AGAR TIDAK LEWAT TABEL DAN Z-50
         html += `<td class="p-4 text-center relative">`;
         if (isAdmin) {
             html += `
-                <button onclick="toggleKebabMenu(event, 'drop-summary-${m.id}')" class="kebab-btn bg-gray-100 hover:bg-gray-200 text-gray-600 w-8 h-8 rounded-lg font-bold transition-colors">⋮</button>
-                <div id="drop-summary-${m.id}" class="dropdown-menu hidden absolute right-0 top-full mt-1 bg-white shadow-xl rounded-xl border border-gray-100 w-40 py-2 text-sm text-gray-700 z-30">
-                    <button onclick="infoResepCard(${m.id})" class="w-full text-left px-4 py-2 hover:bg-blue-50 font-bold text-blue-600">ℹ️ Info</button>
-                    <button onclick="bukaModalEditResep(${JSON.stringify(m).replace(/"/g, '&quot;')})" class="w-full text-left px-4 py-2 hover:bg-blue-50 font-bold text-blue-600">📝 Edit</button>
-                    <button onclick="aksiHapusResep(${m.id}, '${m.nama}')" class="w-full text-left px-4 py-2 hover:bg-red-50 font-bold text-red-600 border-t border-gray-100">🗑️ Hapus</button>
+                <button onclick="toggleKebabMenu(event, 'drop-summary-${m.id}')" class="kebab-btn bg-gray-100 hover:bg-gray-200 text-gray-600 w-8 h-8 rounded-lg font-bold transition-colors focus:outline-none">⋮</button>
+                <div id="drop-summary-${m.id}" class="dropdown-menu hidden absolute right-10 top-0 mt-0 bg-white shadow-xl rounded-xl border border-gray-100 w-36 text-sm text-gray-700 z-50 flex flex-col overflow-hidden">
+                    <button onclick="infoResepCard(${m.id})" class="w-full text-left px-4 py-2.5 hover:bg-blue-50 font-bold text-blue-600 flex items-center gap-3 border-b border-gray-100 transition-colors">ℹ️ Info</button>
+                    <button onclick="bukaModalEditResep(${JSON.stringify(m).replace(/"/g, '&quot;')})" class="w-full text-left px-4 py-2.5 hover:bg-blue-50 font-bold text-blue-600 flex items-center gap-3 border-b border-gray-100 transition-colors">📝 Edit</button>
+                    <button onclick="aksiHapusResep(${m.id}, '${m.nama}')" class="w-full text-left px-4 py-2.5 hover:bg-red-50 font-bold text-red-600 flex items-center gap-3 transition-colors">🗑️ Hapus</button>
                 </div>
             `;
         } else {
             html += `
-                <button onclick="toggleKebabMenu(event, 'drop-summary-${m.id}')" class="kebab-btn bg-gray-100 hover:bg-gray-200 text-gray-600 w-8 h-8 rounded-lg font-bold transition-colors">⋮</button>
-                <div id="drop-summary-${m.id}" class="dropdown-menu hidden absolute right-0 top-full mt-1 bg-white shadow-xl rounded-xl border border-gray-100 w-40 py-2 text-sm text-gray-700 z-30">
-                    <button onclick="infoResepCard(${m.id})" class="w-full text-left px-4 py-2 hover:bg-blue-50 font-bold text-blue-600">ℹ️ Info</button>
+                <button onclick="toggleKebabMenu(event, 'drop-summary-${m.id}')" class="kebab-btn bg-gray-100 hover:bg-gray-200 text-gray-600 w-8 h-8 rounded-lg font-bold transition-colors focus:outline-none">⋮</button>
+                <div id="drop-summary-${m.id}" class="dropdown-menu hidden absolute right-10 top-0 mt-0 bg-white shadow-xl rounded-xl border border-gray-100 w-36 text-sm text-gray-700 z-50 flex flex-col overflow-hidden">
+                    <button onclick="infoResepCard(${m.id})" class="w-full text-left px-4 py-2.5 hover:bg-blue-50 font-bold text-blue-600 flex items-center gap-3 transition-colors">ℹ️ Info</button>
                 </div>
             `;
         }
