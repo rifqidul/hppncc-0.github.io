@@ -1,7 +1,3 @@
-// ============================================================
-// SCRIPT.JS – LENGKAP (F&B PRO)
-// ============================================================
-
 const SUPABASE_URL = 'https://mslsgobvzzxxkwfvpjhx.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1zbHNnb2J2enp4eGt3ZnZwamh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMzAzMDEsImV4cCI6MjA5NzgwNjMwMX0.V7pUmC3En3O0pc3VamJUm9eq7cnB7UFLi333LmtnJqQ';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -20,7 +16,6 @@ let hppLimitThreshold = parseFloat(localStorage.getItem('fnb_hpp_limit')) || 35;
 let overheadCost = parseFloat(localStorage.getItem('fnb_overhead')) || 0;
 let overheadType = localStorage.getItem('fnb_overhead_type') || 'nominal';
 
-// ==================== UTILITY ====================
 const formatRp = (angka) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(angka);
 
 function formatRupiahInput(element) {
@@ -112,7 +107,6 @@ function toggleKebabMenu(event, menuId) {
     if (isHidden) targetMenu.classList.remove('hidden');
 }
 
-// ==================== AUTH ====================
 async function inisialisasiAuth() {
     document.getElementById('setting-hpp-limit').value = hppLimitThreshold;
     document.getElementById('setting-overhead-type').value = overheadType;
@@ -170,7 +164,6 @@ function renderAuthUI() {
             switchTab('tab-direktori');
         }
     }
-    // Jika tab summary aktif, refresh tabel (untuk checkbox & aksi)
     if (document.getElementById('tab-summary').classList.contains('active')) {
         renderTableSummary();
     }
@@ -214,14 +207,12 @@ function switchTab(tabId) {
         mobileBtn.classList.remove('text-gray-600', 'font-semibold');
         mobileBtn.classList.add('bg-blue-50', 'text-blue-700', 'font-bold');
     }
-    if (tabId === 'tab-bahan-baku') { bbCurrentPage = 1;
-        loadBahanBaku(); }
+    if (tabId === 'tab-bahan-baku') { bbCurrentPage = 1; loadBahanBaku(); }
     if (tabId === 'tab-input-hpp') loadDropdownBahanBaku('baru');
     if (tabId === 'tab-direktori' || tabId === 'tab-summary' || tabId === 'tab-dashboard') loadDirektori();
     if (tabId === 'tab-summary') renderTableSummary();
 }
 
-// ==================== PENGATURAN ====================
 function simpanSettings() {
     const limitVal = parseFloat(document.getElementById('setting-hpp-limit').value);
     const ovhType = document.getElementById('setting-overhead-type').value;
@@ -242,7 +233,6 @@ function simpanSettings() {
     }
 }
 
-// ==================== KATEGORI ====================
 async function loadKategoriDB() {
     const { data, error } = await supabaseClient.from('kategori_db').select('*').order('nama');
     if (!error && data) {
@@ -259,7 +249,6 @@ function renderDropdownKategori() {
     const optSub = '<option value="Uncategorized">-- Pilih Sub-Kategori --</option>' + listSubKategori.map(k => `<option value="${k.nama}">${k.nama}</option>`).join('');
     ['r-kategori', 'edit-r-kategori'].forEach(id => { if (document.getElementById(id)) document.getElementById(id).innerHTML = optKat; });
     ['r-sub', 'edit-r-sub'].forEach(id => { if (document.getElementById(id)) document.getElementById(id).innerHTML = optSub; });
-
     const fSum = document.getElementById('filter-summary-kat');
     if (fSum) {
         fSum.innerHTML = '<option value="all">Semua Kategori</option>' + listKategori.map(k => `<option value="${k.nama}">${k.nama}</option>`).join('');
@@ -335,8 +324,7 @@ async function simpanKategoriManajemen() {
             bukaModalAssignMenu(jenis, inputName);
         }
     } else {
-        if (inputName === oldName) { hideLoading();
-            closeModal('modal-kelola-kategori'); return; }
+        if (inputName === oldName) { hideLoading(); closeModal('modal-kelola-kategori'); return; }
         await supabaseClient.from('kategori_db').update({ nama: inputName }).eq('id', id);
         const fieldTarget = jenis === 'Kategori' ? 'kategori' : 'sub_kategori';
         let updatePayload = {};
@@ -467,7 +455,6 @@ async function simpanAssignMenu() {
     }
 }
 
-// ==================== BAHAN BAKU ====================
 function kalkulasiHargaSatuBB(mode) {
     const prefix = mode === 'edit' ? 'edit-bb-' : 'bb-';
     const hrgBeli = getNilaiAsli(document.getElementById(prefix + 'harga-beli').value);
@@ -486,8 +473,7 @@ function sortBahanBaku(key, order) {
 
 async function loadBahanBaku() {
     const { data, error } = await supabaseClient.from('bahan_baku').select('*');
-    if (!error) { bahanBakuList = data;
-        renderTabelBahanBaku(); }
+    if (!error) { bahanBakuList = data; renderTabelBahanBaku(); }
 }
 
 function updatePaginationBB() {
@@ -604,12 +590,9 @@ async function simpanEditBahanBaku() {
     const { error } = await supabaseClient.from('bahan_baku').update({ nama, satuan_beli: satuanBeli, harga_beli: hargaBeli, nilai_konversi: konversi, satuan: satuanResep, harga: (hargaBeli / konversi) }).eq('id', id);
     hideLoading();
     if (error) alert("Gagal memperbarui data!");
-    else { closeModal('modal-edit-bb');
-        loadBahanBaku();
-        loadDirektori(); }
+    else { closeModal('modal-edit-bb'); loadBahanBaku(); loadDirektori(); }
 }
 
-// ==================== AUTOCOMPLETE BAHAN ====================
 async function loadDropdownBahanBaku(targetElement) {
     const { data } = await supabaseClient.from('bahan_baku').select('*').order('nama');
     bahanBakuList = data || [];
@@ -654,7 +637,6 @@ function pilihBahanBaku(mode, id, nama, harga, satuan) {
     document.getElementById(prefix + 'dropdown-list').classList.add('hidden');
 }
 
-// ==================== RESEP KOMPOSISI ====================
 function addTempKomposisi(mode) {
     const prefix = mode === 'edit' ? 'edit-r-' : 'r-';
     const id = document.getElementById(prefix + 'bb-selected-id').value;
@@ -721,10 +703,8 @@ function updateKalkulasiHPP(mode) {
     const dataArr = mode === 'edit' ? tempKomposisiEdit : tempKomposisiBaru;
     const elHargaJual = document.getElementById(prefix + 'harga-jual');
     const elYield = document.getElementById(prefix + 'yield');
-    if (elHargaJual && !elHargaJual.hasAttribute('data-bound')) { elHargaJual.addEventListener('input', () => updateKalkulasiHPP(mode));
-        elHargaJual.setAttribute('data-bound', 'true'); }
-    if (elYield && !elYield.hasAttribute('data-bound')) { elYield.addEventListener('input', () => updateKalkulasiHPP(mode));
-        elYield.setAttribute('data-bound', 'true'); }
+    if (elHargaJual && !elHargaJual.hasAttribute('data-bound')) { elHargaJual.addEventListener('input', () => updateKalkulasiHPP(mode)); elHargaJual.setAttribute('data-bound', 'true'); }
+    if (elYield && !elYield.hasAttribute('data-bound')) { elYield.addEventListener('input', () => updateKalkulasiHPP(mode)); elYield.setAttribute('data-bound', 'true'); }
 
     const hargaJual = getNilaiAsli(elHargaJual.value);
     const yieldPorsi = parseFloat(elYield.value) || 1;
@@ -774,7 +754,6 @@ async function simpanResepFinal() {
     }
 }
 
-// ==================== DUPLIKASI RESEP ====================
 async function duplikasiResepCard(id, namaMenu) {
     if (!confirm(`Apakah Anda yakin ingin menduplikasi resep "${namaMenu}"?`)) return;
     showLoading();
@@ -810,7 +789,6 @@ async function duplikasiResepCard(id, namaMenu) {
     }
 }
 
-// ==================== DIREKTORI, SUMMARY, DASHBOARD ====================
 async function loadDirektori() {
     const { data: bbData } = await supabaseClient.from('bahan_baku').select('*');
     if (bbData) bahanBakuList = bbData;
@@ -819,8 +797,7 @@ async function loadDirektori() {
     if (error) return;
 
     cachedResepSummaryData = data.map(menu => {
-        let totalBiayaBahan = 0,
-            komposisiHTML = '';
+        let totalBiayaBahan = 0, komposisiHTML = '';
         (menu.resep_detail || []).forEach(det => {
             if (det.bahan_baku) {
                 totalBiayaBahan += det.qty * det.bahan_baku.harga;
@@ -854,10 +831,6 @@ function renderCatalogDirektori() {
         processedData = processedData.filter(m => m.kategori === filterKat);
     }
     if (searchKey) processedData = processedData.filter(m => m.nama.toLowerCase().includes(searchKey) || (m.kategori && m.kategori.toLowerCase().includes(searchKey)) || (m.sub_kategori && m.sub_kategori.toLowerCase().includes(searchKey)));
-    const sortBy = document.getElementById('sort-resep').value;
-    if (sortBy === 'nama') processedData.sort((a, b) => a.nama.localeCompare(b.nama));
-    if (sortBy === 'hpp_asc') processedData.sort((a, b) => a.hppPersen - b.hppPersen);
-    if (sortBy === 'hpp_desc') processedData.sort((a, b) => b.hppPersen - a.hppPersen);
 
     const wrapper = document.getElementById('recipe-wrapper');
     wrapper.innerHTML = '';
@@ -928,7 +901,6 @@ function renderTableSummary() {
     if (searchVal) sData = sData.filter(m => m.nama.toLowerCase().includes(searchVal));
     if (filterKat !== 'all') sData = sData.filter(m => m.kategori === filterKat);
 
-    // Sorting
     sData.sort((a, b) => {
         let valA = a[summarySortKey] !== undefined ? a[summarySortKey] : '';
         let valB = b[summarySortKey] !== undefined ? b[summarySortKey] : '';
@@ -947,7 +919,6 @@ function renderTableSummary() {
 
     const isAdmin = adminAktif !== null;
 
-    // Tampilkan/sembunyikan kolom checkbox & tombol hapus massal
     const thCheckbox = document.getElementById('th-checkbox-summary');
     const btnMassal = document.getElementById('btn-delete-massal');
     if (thCheckbox) {
@@ -965,11 +936,9 @@ function renderTableSummary() {
         row.className = 'hover:bg-gray-50 transition-colors';
 
         let html = '';
-        // Kolom checkbox (hanya jika admin)
         if (isAdmin) {
             html += `<td class="p-4 w-8 text-center"><input type="checkbox" class="summary-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-400" value="${m.id}" /></td>`;
         }
-        // Kolom data
         html += `
             <td class="p-4 font-bold text-gray-800">${m.nama}</td>
             <td class="p-4 text-gray-600 text-xs font-semibold"><span class="bg-gray-100 border px-2 py-1 rounded-md">${m.kategori}</span></td>
@@ -979,7 +948,7 @@ function renderTableSummary() {
             <td class="p-4 text-center ${textHppColor}">${m.hppPersen.toFixed(1)}%</td>
             <td class="p-4 text-right font-bold ${m.margin < 0 ? 'text-red-500':'text-emerald-600'}">${formatRp(m.margin)}</td>
         `;
-        // Kolom aksi (titik tiga) – dropdown ke bawah
+        // [PERBAIKAN 3] DROPDOWN KE BAWAH (top-full)
         html += `<td class="p-4 text-center relative">`;
         if (isAdmin) {
             html += `
@@ -991,7 +960,6 @@ function renderTableSummary() {
                 </div>
             `;
         } else {
-            // Guest: hanya Info
             html += `
                 <button onclick="toggleKebabMenu(event, 'drop-summary-${m.id}')" class="kebab-btn bg-gray-100 hover:bg-gray-200 text-gray-600 w-8 h-8 rounded-lg font-bold transition-colors">⋮</button>
                 <div id="drop-summary-${m.id}" class="dropdown-menu hidden absolute right-0 top-full mt-1 bg-white shadow-xl rounded-xl border border-gray-100 w-40 py-2 text-sm text-gray-700 z-30">
@@ -1005,7 +973,6 @@ function renderTableSummary() {
         tbody.appendChild(row);
     });
 
-    // Update icon sort di header
     document.querySelectorAll('#summary-table .sortable').forEach(th => {
         const key = th.dataset.sort;
         const icon = th.querySelector('.sort-icon');
@@ -1016,12 +983,10 @@ function renderTableSummary() {
         }
     });
 
-    // Reset checkbox select all
     const selectAll = document.getElementById('select-all-summary');
     if (selectAll) selectAll.checked = false;
 }
 
-// ==================== INFO RESEP ====================
 function infoResepCard(id) {
     const menu = cachedResepSummaryData.find(m => m.id === id);
     if (!menu) return alert('Data tidak ditemukan');
@@ -1042,7 +1007,6 @@ function infoResepCard(id) {
     document.getElementById('modal-info-resep').classList.remove('hidden');
 }
 
-// ==================== HAPUS MASSAL ====================
 function toggleSelectAllSummary() {
     const checked = document.getElementById('select-all-summary').checked;
     document.querySelectorAll('.summary-checkbox').forEach(cb => cb.checked = checked);
@@ -1068,15 +1032,13 @@ async function hapusMassalResep() {
     }
 }
 
-// ==================== DASHBOARD ====================
 function renderDashboardAnalitika() {
     if (!document.getElementById('dash-total-menu')) return;
 
     const countMenu = cachedResepSummaryData.length;
     const countBB = bahanBakuList.length;
 
-    let totalSumHpp = 0,
-        criticalCount = 0;
+    let totalSumHpp = 0, criticalCount = 0;
     cachedResepSummaryData.forEach(m => {
         totalSumHpp += m.hppPersen;
         if (m.hppPersen > hppLimitThreshold) criticalCount++;
@@ -1119,7 +1081,6 @@ function renderDashboardAnalitika() {
     }
 }
 
-// ==================== EDIT & HAPUS RESEP ====================
 async function aksiHapusResep(id, nama) {
     if (confirm(`Yakin hapus resep "${nama}"?`)) {
         showLoading();
@@ -1168,7 +1129,6 @@ async function simpanEditResep() {
     loadDirektori();
 }
 
-// ==================== IMPORT / EXPORT ====================
 function initiateImport(event, type) {
     fileImportTertunda = event.target.files[0];
     if (!fileImportTertunda) return;
@@ -1217,16 +1177,12 @@ function eksekusiImportBahanBaku(mode) {
                 const k = parseFloat(r["Nilai Konversi (Yield)"] || 1);
                 return { nama: String(r["Nama Bahan"]).trim(), satuan_beli: r["Satuan Beli"], harga_beli: h, nilai_konversi: k, satuan: r["Satuan Pemakaian Resep"], harga: h / k };
             }).filter(r => r.nama && r.nama !== "undefined");
-            if (cleanData.length === 0) { hideLoading();
-                alert("Data kosong!");
-                batalImport(); return; }
+            if (cleanData.length === 0) { hideLoading(); alert("Data kosong!"); batalImport(); return; }
             let successCount = 0;
             let failCount = 0;
             if (mode === 'replace') {
                 const { error: delError } = await supabaseClient.from('bahan_baku').delete().neq('id', 0);
-                if (delError && delError.code === '23503') { hideLoading();
-                    alert("GAGAL: Bahan baku sedang dipakai di Resep.");
-                    batalImport(); return; }
+                if (delError && delError.code === '23503') { hideLoading(); alert("GAGAL: Bahan baku sedang dipakai di Resep."); batalImport(); return; }
                 const { error: insError } = await supabaseClient.from('bahan_baku').insert(cleanData);
                 if (insError) { failCount = cleanData.length; } else { successCount = cleanData.length; }
             } else if (mode === 'modify') {
@@ -1284,9 +1240,7 @@ function eksekusiImportKategori(mode) {
             const rows = XLSX.utils.sheet_to_json(XLSX.read(new Uint8Array(e.target.result), { type: 'array' }).Sheets[XLSX.read(new Uint8Array(e.target.result), { type: 'array' }).SheetNames[0]]);
             const cleanData = rows.map(r => ({ nama: String(r["Nama"] || "").trim(), jenis: String(r["Jenis"] || "").trim() })).filter(r => r.nama && (r.jenis === 'Kategori' || r.jenis === 'Sub-Kategori'));
 
-            if (cleanData.length === 0) { hideLoading();
-                alert("Data Excel kosong / tidak valid!");
-                batalImport(); return; }
+            if (cleanData.length === 0) { hideLoading(); alert("Data Excel kosong / tidak valid!"); batalImport(); return; }
             if (mode === 'replace') await supabaseClient.from('kategori_db').delete().neq('id', 0);
 
             let successCount = 0;
@@ -1340,9 +1294,7 @@ function eksekusiImportResep(mode) {
     reader.onload = async (e) => {
         try {
             const rows = XLSX.utils.sheet_to_json(XLSX.read(new Uint8Array(e.target.result), { type: 'array' }).Sheets[XLSX.read(new Uint8Array(e.target.result), { type: 'array' }).SheetNames[0]]);
-            if (rows.length === 0) { hideLoading();
-                alert("Data Excel kosong!");
-                batalImport(); return; }
+            if (rows.length === 0) { hideLoading(); alert("Data Excel kosong!"); batalImport(); return; }
             if (mode === 'replace') await supabaseClient.from('resep').delete().neq('id', 0);
             const { data: bbData } = await supabaseClient.from('bahan_baku').select('*');
             const bbMap = {};
@@ -1393,7 +1345,6 @@ function eksekusiImportResep(mode) {
     reader.readAsArrayBuffer(fileImportTertunda);
 }
 
-// ==================== SORTING HEADER CLICK ====================
 document.addEventListener('click', function(e) {
     const th = e.target.closest('.sortable');
     if (th && th.closest('#summary-table')) {
@@ -1410,16 +1361,14 @@ document.addEventListener('click', function(e) {
     }
 });
 
-// ==================== INIT ====================
-window.onload = async () => {
-    await inisialisasiAuth();
-    await loadKategoriDB();
-    await loadDirektori();
-};
-
-// Tutup dropdown saat klik di luar
 document.addEventListener('click', function(e) {
     if (!e.target.closest('.kebab-btn') && !e.target.closest('[onclick*="toggleKebabMenu"]')) {
         document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.add('hidden'));
     }
 });
+
+window.onload = async () => {
+    await inisialisasiAuth();
+    await loadKategoriDB();
+    await loadDirektori();
+};
