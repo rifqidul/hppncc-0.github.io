@@ -80,3 +80,9 @@
 input, select, button {
     transition: all 0.2s ease;
 }
+
+/* Penyesuaian responsivitas nomor porsi qty resep */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    opacity: 1;
+}
